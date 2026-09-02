@@ -1,9 +1,14 @@
-import { View, Text, StyleSheet } from 'react-native';
+'use client';
+
+import { View, StyleSheet, StatusBar } from 'react-native';
+import { ExperienceCanvas } from '@/components/3d/ExperienceCanvas';
+import { colors } from '@/constants/design';
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.message}>Start prompting now to make changes</Text>
+      <StatusBar barStyle="light-content" backgroundColor={colors.background} translucent />
+      <ExperienceCanvas />
     </View>
   );
 }
@@ -11,13 +16,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  message: {
-    fontSize: 20,
-    fontWeight: '600',
-    textAlign: 'center',
+    backgroundColor: colors.background,
   },
 });
