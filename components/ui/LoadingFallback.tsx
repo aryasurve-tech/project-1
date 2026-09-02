@@ -3,9 +3,9 @@
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { colors, typography, spacing } from '@/constants/design';
 
-export function LoadingFallback() {
+function LoadingFallback() {
   return (
-    <View style={styles.container} accessible={false} importantForAccessibility="no-hide-descendants">
+    <View style={styles.container} accessible={false}>
       <ActivityIndicator size="large" color={colors.accent} style={styles.spinner} />
       <Text style={styles.text}>LOADING SYSTEM</Text>
       <View style={styles.barContainer}>
@@ -48,3 +48,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
 });
+
+export default LoadingFallback;

@@ -26,6 +26,8 @@ interface ParticleFieldProps {
  * and optional convergence toward a core (used by the final CTA).
  */
 export function ParticleField({
+  zone,
+  weightKey,
   count,
   size = 2,
   color = '#ffffff',
@@ -52,13 +54,13 @@ export function ParticleField({
     const positions = new Float32Array(count * 3);
     const base = new Float32Array(count * 3);
     const targets = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
-    const alphas = new Float32Array(count);
-    const seeds = new Float32Array(count);
+    const sizeVals = new Float32Array(count);
+    const alphaVals = new Float32Array(count);
+    const seedVals = new Float32Array(count);
     const target = onSelection ? new THREE.Vector3(...onSelection) : new THREE.Vector3(...center);
 
     for (let i = 0; i < count; i++) {
-      seeds[i] = Math.random() * Math.PI * 2;
+      seedVals[i] = Math.random() * Math.PI * 2;
 
       const radius = radiusMin + Math.random() * (radiusMax - radiusMin);
       const theta = Math.random() * Math.PI * 2;
@@ -81,13 +83,13 @@ export function ParticleField({
       targets[i * 3 + 1] = target.y + tr * Math.sin(tPhi) * Math.sin(tTheta);
       targets[i * 3 + 2] = target.z + tr * Math.cos(tPhi);
 
-      sizes[i] = 0.4 + Math.random() * 1.6;
-      alphas[i] = 0.3 + Math.random() * 0.7;
+      sizeVals[i] = 0.4 + Math.random() * 1.6;
+      alphaVals[i] = 0.3 + Math.random() * 0.7;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
-    geometry.setAttribute('aAlpha', new THREE.BufferAttribute(alphas, 1));
+    geometry.setAttribute('aSize', new THREE.BufferAttribute(sizeVals, 1));
+    geometry.setAttribute('aAlpha', new THREE.BufferAttribute(alphaVals, 1));
 
     const material = new THREE.ShaderMaterial({
       transparent: true,
@@ -106,9 +108,9 @@ export function ParticleField({
 
     basePositions.current = base;
     targetPositions.current = targets;
-    sizes.current = sizes;
-    alphas.current = alphas;
-    seeds.current = seeds;
+    sizes.current = sizeVals;
+    alphas.current = alphaVals;
+    seeds.current = seedVals;
 
     return { geometry, material };
   }, [count, size, color, center, radiusMin, radiusMax, onSelection, progress]);

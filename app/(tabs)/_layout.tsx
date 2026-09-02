@@ -3,7 +3,12 @@ import { Home } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { display: 'none' },
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{

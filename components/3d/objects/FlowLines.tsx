@@ -51,7 +51,7 @@ export function FlowLines({
 
   const material = useMemo(() => {
     const mat = new LineMaterial({
-      color: new THREE.Color(color),
+      color: color as unknown as number,
       linewidth: 0.8,
       dashed: true,
       dashSize: 2,

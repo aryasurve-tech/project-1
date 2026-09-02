@@ -18,7 +18,7 @@ export const colors = {
   structureColorDim: 'rgba(255, 255, 255, 0.05)',
   dataSignalColor: '#ffffff',
   fogColor: '#000000',
-};
+} as const;
 
 export const typography = {
   fontFamily: 'IBM Plex Sans',
@@ -51,9 +51,9 @@ export const typography = {
     tight: -0.02,
     normal: 0,
     wide: 0.02,
-    wider: 0.1,
+    wider: 0.12,
   },
-};
+} as const;
 
 export const spacing = {
   xs: 4,
@@ -65,14 +65,14 @@ export const spacing = {
   '3xl': 64,
   '4xl': 96,
   '5xl': 128,
-};
+} as const;
 
 export const breakpoints = {
   mobile: 640,
   tablet: 1024,
   desktop: 1440,
   wide: 1920,
-};
+} as const;
 
 export const transitions = {
   fast: 150,
@@ -80,14 +80,14 @@ export const transitions = {
   slow: 500,
   slower: 800,
   cinematic: 1200,
-};
+} as const;
 
 export const easings = {
   easeOut: [0.25, 0.46, 0.45, 0.94],
   easeInOut: [0.4, 0, 0.2, 1],
   cinematic: [0.16, 1, 0.3, 1],
   spring: [0.34, 1.56, 0.64, 1],
-};
+} as const;
 
 export const zIndices = {
   canvas: 0,
@@ -95,7 +95,7 @@ export const zIndices = {
   navigation: 100,
   modal: 200,
   tooltip: 300,
-};
+} as const;
 
 export const sceneConfig = {
   hero: { name: 'hero', progress: { start: 0, end: 0.15 } },
@@ -105,11 +105,13 @@ export const sceneConfig = {
   scale: { name: 'scale', progress: { start: 0.6, end: 0.75 } },
   infrastructure: { name: 'infrastructure', progress: { start: 0.75, end: 0.9 } },
   cta: { name: 'cta', progress: { start: 0.9, end: 1 } },
-};
+} as const;
+
+const basePixelRatio = typeof window === 'undefined' ? 1 : window.devicePixelRatio;
 
 export const performanceConfig = {
   desktop: {
-    pixelRatio: Math.min(window.devicePixelRatio, 2),
+    pixelRatio: Math.min(basePixelRatio, 2),
     nodeCount: 3000,
     structureCount: 150,
     pathwayCount: 500,
@@ -118,7 +120,7 @@ export const performanceConfig = {
     enableFog: true,
   },
   tablet: {
-    pixelRatio: Math.min(window.devicePixelRatio, 1.5),
+    pixelRatio: Math.min(basePixelRatio, 1.5),
     nodeCount: 1500,
     structureCount: 80,
     pathwayCount: 250,
@@ -135,4 +137,4 @@ export const performanceConfig = {
     enableShadows: false,
     enableFog: false,
   },
-};
+} as const;

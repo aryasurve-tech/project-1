@@ -3,13 +3,13 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { ParticleField } from "../objects/ParticleField";
-import { Structures } from "../objects/Structures";
-import { FlowLines } from "../objects/FlowLines";
-import { NodeNetwork } from "../objects/NodeNetwork";
-import { ClusterField } from "../objects/ClusterField";
-import { PrecisionGrid } from "../objects/PrecisionGrid";
-import { ProjectModules } from "../objects/ProjectModules";
+import { ParticleField } from "./objects/ParticleField";
+import { Structures } from "./objects/Structures";
+import { FlowLines } from "./objects/FlowLines";
+import { NodeNetwork } from "./objects/NodeNetwork";
+import { ClusterField } from "./objects/ClusterField";
+import { PrecisionGrid } from "./objects/PrecisionGrid";
+import { ProjectModules } from "./objects/ProjectModules";
 import { zoneWeights } from "@/lib/zoneWeights";
 import { useDeviceCategory } from "@/lib/experience";
 import type { SectionKey } from "@/lib/experience";
@@ -76,7 +76,7 @@ export function ZoneObjects({ zoneKey }: { zoneKey: SectionKey }) {
               [-20, 14, -10],
               [22, 12, -14],
               [6, -30, 10],
-            ].map((position, index) => ({ index, position, scale: 1 }))}
+            ].map((position, index) => ({ index, position: position as [number, number, number], scale: 1 }))}
           />
           <ParticleField count={q.particles} size={1.2} center={[0, 0, 0]} radiusMin={34} radiusMax={52} opacity={0.4} drift={0.03} />
         </group>
