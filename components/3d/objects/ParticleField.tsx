@@ -1,172 +1,184 @@
 'use client';
 
-import { Points, useFrame, BufferGeometry, PointsMaterial, Float32BufferAttribute } from '@react-three/fiber';
-import { Vector3, Color, AdditiveBlending } from 'three';
-import { useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
-import { colors } from '@/constants/design';
+import { useMemo, useRef, useEffect } from 'react';
+import { resolveZoneWeight } from '@/lib/zoneWeights';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 
 interface ParticleFieldProps {
+  zone?: string;
+  weightKey?: 'enter' | 'deep';
   count: number;
-  size: number;
-  opacity: number;
-  progress: number;
+  size?: number;
+  color?: string;
+  opacity?: number;
+  center?: [number, number, number];
+  radiusMin?: number;
+  radiusMax?: number;
+  onSelection?: [number, number, number];
+  progress?: number;
+  drift?: number;
+  convergence?: number;
 }
 
-export const ParticleField = forwardRef<ParticleFieldAPI, ParticleFieldProps>(
-  ({ count, size, opacity, progress }, ref) => {
-    const geometryRef = useRef<BufferGeometry>();
-    const positionsRef = useRef<Float32Array>();
-    const velocitiesRef = useRef<Float32Array>();
-    const sizesRef = useRef<Float32Array>();
-    const alphasRef = useRef<Float32Array>();
-    const materialRef = useRef<PointsMaterial>();
-    const initialized = useRef(false);
+/**
+ * Generic shader-based point field. Supports slow drift, per-particle size/alpha
+ * and optional convergence toward a core (used by the final CTA).
+ */
+export function ParticleField({
+  count,
+  size = 2,
+  color = '#ffffff',
+  opacity = 1,
+  center = [0, 0, 0],
+  radiusMin = 10,
+  radiusMax = 60,
+  onSelection,
+  progress = 0,
+  drift = 0.1,
+  convergence = 0,
+}: ParticleFieldProps) {
+  const geoRef = useRef<THREE.BufferGeometry>(null);
+  const materialRef = useRef<THREE.ShaderMaterial>(null);
+  const basePositions = useRef<Float32Array | null>(null);
+  const targetPositions = useRef<Float32Array | null>(null);
+  const sizes = useRef<Float32Array | null>(null);
+  const alphas = useRef<Float32Array | null>(null);
+  const seeds = useRef<Float32Array | null>(null);
+  const initialised = useRef(false);
 
-    useImperativeHandle(ref, () => ({
-      update: (time: number, delta: number, progress: number) => {
-        updateParticles(time, delta, progress);
+  const { geometry, material } = useMemo(() => {
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    const base = new Float32Array(count * 3);
+    const targets = new Float32Array(count * 3);
+    const sizes = new Float32Array(count);
+    const alphas = new Float32Array(count);
+    const seeds = new Float32Array(count);
+    const target = onSelection ? new THREE.Vector3(...onSelection) : new THREE.Vector3(...center);
+
+    for (let i = 0; i < count; i++) {
+      seeds[i] = Math.random() * Math.PI * 2;
+
+      const radius = radiusMin + Math.random() * (radiusMax - radiusMin);
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const x = center[0] + radius * Math.sin(phi) * Math.cos(theta);
+      const y = center[1] + radius * Math.sin(phi) * Math.sin(theta);
+      const z = center[2] + radius * Math.cos(phi);
+
+      base[i * 3] = x;
+      base[i * 3 + 1] = y;
+      base[i * 3 + 2] = z;
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
+
+      const tr = 0.5 + Math.pow(Math.random(), 2) * 6;
+      const tTheta = Math.random() * Math.PI * 2;
+      const tPhi = Math.acos(2 * Math.random() - 1);
+      targets[i * 3] = target.x + tr * Math.sin(tPhi) * Math.cos(tTheta);
+      targets[i * 3 + 1] = target.y + tr * Math.sin(tPhi) * Math.sin(tTheta);
+      targets[i * 3 + 2] = target.z + tr * Math.cos(tPhi);
+
+      sizes[i] = 0.4 + Math.random() * 1.6;
+      alphas[i] = 0.3 + Math.random() * 0.7;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('aSize', new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute('aAlpha', new THREE.BufferAttribute(alphas, 1));
+
+    const material = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime: { value: 0 },
+        uColor: { value: new THREE.Color(color) },
+        uOpacity: { value: 1 },
+        uSize: { value: size },
+        uGlow: { value: 1 },
       },
-    }), []);
-
-    useFrame((state, delta) => {
-      if (!initialized.current) {
-        initializeParticles();
-        initialized.current = true;
-      }
-      updateParticles(state.clock.getElapsedTime(), delta, progress);
+      vertexShader: gpuVertexShader,
+      fragmentShader: gpuFragmentShader,
     });
 
-    function initializeParticles() {
-      geometryRef.current = new BufferGeometry();
-      positionsRef.current = new Float32Array(count * 3);
-      velocitiesRef.current = new Float32Array(count * 3);
-      sizesRef.current = new Float32Array(count);
-      alphasRef.current = new Float32Array(count);
+    basePositions.current = base;
+    targetPositions.current = targets;
+    sizes.current = sizes;
+    alphas.current = alphas;
+    seeds.current = seeds;
 
-      for (let i = 0; i < count; i++) {
-        const radius = 20 + Math.random() * 60;
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
-        
-        positionsRef.current[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-        positionsRef.current[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-        positionsRef.current[i * 3 + 2] = radius * Math.cos(phi) - 20;
+    return { geometry, material };
+  }, [count, size, color, center, radiusMin, radiusMax, onSelection, progress]);
 
-        velocitiesRef.current[i * 3] = (Math.random() - 0.5) * 0.1;
-        velocitiesRef.current[i * 3 + 1] = (Math.random() - 0.5) * 0.1;
-        velocitiesRef.current[i * 3 + 2] = (Math.random() - 0.5) * 0.1;
+  useFrame((state, delta) => {
+    const elapsed = state.clock.getElapsedTime();
+    const resolvedP = resolveZoneWeight(zone, weightKey, progress);
+    const positions = geometry.attributes.position.array as Float32Array;
+    const base = basePositions.current!;
+    const targets = targetPositions.current!;
+    const p = state.clock.elapsedTime;
+    const converged = Math.min(1, Math.max(0, zone ? resolvedP : convergence));
 
-        sizesRef.current[i] = size * (0.5 + Math.random() * 1.5);
-        alphasRef.current[i] = opacity * (0.1 + Math.random() * 0.9);
-      }
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      const seed = seeds.current![i];
+      const speed = drift * (0.4 + 0.6 * Math.abs(Math.sin(seed)));
 
-      geometryRef.current.setAttribute('position', new Float32BufferAttribute(positionsRef.current, 3));
-      geometryRef.current.setAttribute('aSize', new Float32BufferAttribute(sizesRef.current, 1));
-      geometryRef.current.setAttribute('aAlpha', new Float32BufferAttribute(alphasRef.current, 1));
+      const px = base[i3] + Math.sin(seed * 13.7 + elapsed * speed) * 2 * drift;
+      const py = base[i3 + 1] + Math.cos(seed * 7.3 + elapsed * speed * 1.3) * 2 * drift;
+      const pz = base[i3 + 2] + Math.sin(seed * 3.1 + elapsed * speed * 0.7) * 2 * drift;
+
+      positions[i3] = THREE.MathUtils.lerp(px, targets[i3], converged);
+      positions[i3 + 1] = THREE.MathUtils.lerp(py, targets[i3 + 1], converged);
+      positions[i3 + 2] = THREE.MathUtils.lerp(pz, targets[i3 + 2], converged);
     }
 
-    function updateParticles(time: number, delta: number, progress: number) {
-      const positions = positionsRef.current;
-      const velocities = velocitiesRef.current;
-      const alphas = alphasRef.current;
-      const easedProgress = progress * progress * (3 - 2 * progress);
-      
-      for (let i = 0; i < count; i++) {
-        positions[i * 3] += velocities[i * 3] * delta * 60 * easedProgress;
-        positions[i * 3 + 1] += velocities[i * 3 + 1] * delta * 60 * easedProgress;
-        positions[i * 3 + 2] += velocities[i * 3 + 2] * delta * 60 * easedProgress;
+    geometry.attributes.position.needsUpdate = true;
+    material.uniforms.uTime.value = elapsed;
+    material.uniforms.uOpacity.value = opacity * (0.6 + 0.4 * Math.abs(Math.sin(elapsed * 0.3)));
+  });
 
-        const dist = Math.sqrt(
-          positions[i * 3] ** 2 + 
-          positions[i * 3 + 1] ** 2 + 
-          (positions[i * 3 + 2] + 20) ** 2
-        );
-        
-        if (dist > 80) {
-          const radius = 20 + Math.random() * 30;
-          const theta = Math.random() * Math.PI * 2;
-          const phi = Math.acos(2 * Math.random() - 1);
-          
-          positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-          positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
-          positions[i * 3 + 2] = radius * Math.cos(phi) - 20;
-        }
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+      material.dispose();
+    };
+  }, [geometry, material]);
 
-        const pulse = Math.sin(time * 2 + i * 0.1) * 0.5 + 0.5;
-        alphas[i] = opacity * (0.05 + 0.95 * pulse * easedProgress);
-      }
-
-      geometryRef.current!.attributes.position.needsUpdate = true;
-      geometryRef.current!.attributes.aAlpha.needsUpdate = true;
-    }
-
-    const material = useMemo(() => new PointsMaterial({
-      color: new Color(colors.nodeColor),
-      size: size * 100,
-      transparent: true,
-      opacity: 1,
-      vertexColors: false,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      sizeAttenuation: true,
-    }), [size, opacity, progress]);
-
-    materialRef.current = material;
-
-    return (
-      <points geometry={geometryRef.current} material={material}>
-        <shaderMaterial
-          vertexShader={vertexShader}
-          fragmentShader={fragmentShader}
-          uniforms={{
-            uTime: { value: 0 },
-            uProgress: { value: progress },
-            uSize: { value: size },
-            uOpacity: { value: opacity },
-          }}
-        />
-      </points>
-    );
-  }
-);
-
-ParticleField.displayName = 'ParticleField';
-
-interface ParticleFieldAPI {
-  update: (time: number, delta: number, progress: number) => void;
+  return <points geometry={geometry} material={material} frustumCulled={false} />;
 }
 
-const vertexShader = `
+const gpuVertexShader = `
   attribute float aSize;
   attribute float aAlpha;
   varying float vAlpha;
-  varying float vSize;
   uniform float uTime;
-  uniform float uProgress;
-  
+  uniform float uSize;
+  uniform float uGlow;
+
   void main() {
     vAlpha = aAlpha;
-    vSize = aSize;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-    gl_PointSize = uSize * (300.0 / -mvPosition.z) * vSize * uProgress;
+    float pointSize = uSize * aSize * uGlow * (300.0 / max(1.0, -mvPosition.z));
+    gl_PointSize = pointSize;
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
 
-const fragmentShader = `
+const gpuFragmentShader = `
   varying float vAlpha;
-  varying float vSize;
-  uniform float uProgress;
-  
+  uniform vec3 uColor;
+  uniform float uOpacity;
+
   void main() {
-    float dist = length(gl_PointCoord - 0.5);
-    if (dist > 0.5) discard;
-    
-    float alpha = smoothstep(0.5, 0.0, dist) * vAlpha * uProgress;
-    gl_FragColor = vec4(1.0, 1.0, 1.0, alpha);
+    float d = length(gl_PointCoord - 0.5);
+    if (d > 0.5) discard;
+    float soft = smoothstep(0.5, 0.0, d);
+    float core = smoothstep(0.15, 0.0, d);
+    float alpha = (soft * 0.6 + core * 0.9) * vAlpha * uOpacity;
+    gl_FragColor = vec4(uColor, alpha);
   }
 `;
-
-function shaderMaterial({ vertexShader, fragmentShader, uniforms }: any) {
-  return null;
-}
