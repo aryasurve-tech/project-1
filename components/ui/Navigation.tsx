@@ -1,50 +1,46 @@
-'use client';
+"use client";
 
-import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
-import { colors, typography, spacing, zIndices } from '@/constants/design';
-import { useDeviceType } from '@/hooks/useDeviceType';
+import { View, Text, StyleSheet, Pressable, useWindowDimensions } from "react-native";
+import { scrollToSection, useDeviceCategory } from "@/lib/experience";
 
-export function Navigation() {
-  const deviceType = useDeviceType();
+function Navigation() {
+  const device = useDeviceCategory();
   const { width } = useWindowDimensions();
-  const isMobile = deviceType === 'mobile' || width < 640;
+  const isMobile = device === "mobile" || width < 640;
 
   return (
-    <View style={[styles.container, { zIndex: zIndices.navigation }]}>
+    <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.left}>
           <Text style={styles.logo}>AUVERION SYSTEMS</Text>
         </View>
-        
         <View style={styles.right}>
-          {!isMobile && (
+          {!isMobile ? (
             <View style={styles.navLinks}>
-              <NavLink label="Capabilities" href="#capabilities" />
-              <NavLink label="Work" href="#work" />
-              <NavLink label="Approach" href="#approach" />
-              <NavLink label="Company" href="#company" />
-              <NavLink label="Contact" href="#contact" />
+              <NavLink label="Capabilities" onPress={() => scrollToSection(1)} />
+              <NavLink label="Work" onPress={() => scrollToSection(6)} />
+              <NavLink label="Approach" onPress={() => scrollToSection(2)} />
+              <NavLink label="Company" onPress={() => scrollToSection(7)} />
+              <NavLink label="Contact" onPress={() => scrollToSection(8)} />
             </View>
-          )}
-          
-          <Pressable style={styles.ctaButton} onPress={() => {}}>
+          ) : null}
+          <Pressable style={styles.ctaButton} onPress={() => scrollToSection(8)}>
             <Text style={styles.ctaText}>Start a Conversation</Text>
           </Pressable>
-          
-          {isMobile && (
+          {isMobile ? (
             <Pressable style={styles.menuButton} onPress={() => {}}>
               <Text style={styles.menuText}>MENU</Text>
             </Pressable>
-          )}
+          ) : null}
         </View>
       </View>
     </View>
   );
 }
 
-function NavLink({ label, href }: { label: string; href: string }) {
+function NavLink({ label, onPress }: { label: string; onPress: () => void }) {
   return (
-    <Pressable style={styles.navLink} onPress={() => {}}>
+    <Pressable style={styles.navLink} onPress={onPress}>
       <Text style={styles.navLinkText}>{label}</Text>
     </Pressable>
   );
@@ -52,75 +48,77 @@ function NavLink({ label, href }: { label: string; href: string }) {
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    backdropFilter: 'blur(20px)',
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    backdropFilter: "blur(20px)",
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
+    borderBottomColor: "#1a1a1a",
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    zIndex: 100,
   },
   content: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     maxWidth: 1440,
-    marginHorizontal: 'auto',
+    marginHorizontal: "auto",
   },
   left: {
     flex: 1,
   },
   logo: {
-    fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold,
-    color: colors.textPrimary,
-    letterSpacing: typography.letterSpacing.wide,
+    fontFamily: "IBM Plex Sans",
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#ffffff",
+    letterSpacing: 1,
   },
   right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xl,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 32,
   },
   navLinks: {
-    flexDirection: 'row',
-    gap: spacing.xl,
+    flexDirection: "row",
+    gap: 32,
   },
   navLink: {
-    paddingVertical: spacing.xs,
+    paddingVertical: 8,
   },
   navLinkText: {
-    fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    color: colors.textSecondary,
-    letterSpacing: typography.letterSpacing.normal,
+    fontFamily: "IBM Plex Sans",
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#a0a0a0",
   },
   ctaButton: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 2,
   },
   ctaText: {
-    fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-    color: colors.background,
-    letterSpacing: typography.letterSpacing.wide,
+    fontFamily: "IBM Plex Sans",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#000000",
+    letterSpacing: 0.5,
   },
   menuButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   menuText: {
-    fontFamily: typography.fontFamily,
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold,
-    color: colors.textPrimary,
-    letterSpacing: typography.letterSpacing.wider,
+    fontFamily: "IBM Plex Sans",
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#ffffff",
+    letterSpacing: 1,
   },
 });
+
+export default Navigation;

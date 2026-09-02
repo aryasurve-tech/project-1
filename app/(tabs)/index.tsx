@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { View, StyleSheet, StatusBar } from 'react-native';
-import { ExperienceCanvas } from '@/components/3d/ExperienceCanvas';
-import { colors } from '@/constants/design';
+import { View, StyleSheet } from "react-native";
+import { ExperienceCanvas } from "@/components/3d/ExperienceCanvas";
+import { SectionOverlays } from "@/components/ui/overlays/SectionOverlays";
+import { Navigation } from "@/components/ui/Navigation";
 
-export default function HomeScreen() {
+function HomeScreen() {
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} translucent />
       <ExperienceCanvas />
+      <SectionOverlays />
+      <Navigation />
     </View>
   );
 }
@@ -16,6 +18,8 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "#000000",
   },
 });
+
+export default HomeScreen;
