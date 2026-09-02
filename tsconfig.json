@@ -14,7 +14,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "types": ["react", "react-native", "@types/three", "@types/gsap"]
+    "types": ["react", "react-native", "@types/three"]
   },
   "include": [
     "**/*.ts",
